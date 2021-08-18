@@ -1,4 +1,4 @@
-FROM phusion/baseimage:latest
+FROM phusion/baseimage:master
 
 COPY run-certbot.sh /root/certbot/run-certbot.sh
 
