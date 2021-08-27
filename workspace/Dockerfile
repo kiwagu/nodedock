@@ -312,6 +312,84 @@ RUN if [ ${INSTALL_PG_CLIENT} = true ]; then \
     && apt-get -y install postgresql-client-10 \
 ;fi
 
+###########################################################################
+# Oh My ZSH!
+###########################################################################
+
+USER root
+
+ARG SHELL_OH_MY_ZSH=false
+RUN if [ ${SHELL_OH_MY_ZSH} = true ]; then \
+    apt install -y zsh \
+;fi
+
+ARG SHELL_OH_MY_ZSH_AUTOSUGESTIONS=false
+ARG SHELL_OH_MY_ZSH_ALIASES=false
+
+USER nodedock
+RUN if [ ${SHELL_OH_MY_ZSH} = true ]; then \
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh) --keep-zshrc" && \
+    sed -i -r 's/^plugins=\(.*?\)$/plugins=(nvm)/' /home/nodedock/.zshrc && \
+    echo '\n\
+bindkey "^[OB" down-line-or-search\n\
+bindkey "^[OC" forward-char\n\
+bindkey "^[OD" backward-char\n\
+bindkey "^[OF" end-of-line\n\
+bindkey "^[OH" beginning-of-line\n\
+bindkey "^[[1~" beginning-of-line\n\
+bindkey "^[[3~" delete-char\n\
+bindkey "^[[4~" end-of-line\n\
+bindkey "^[[5~" up-line-or-history\n\
+bindkey "^[[6~" down-line-or-history\n\
+bindkey "^?" backward-delete-char\n' >> /home/nodedock/.zshrc && \
+  if [ ${SHELL_OH_MY_ZSH_AUTOSUGESTIONS} = true ]; then \
+    sh -c "git clone https://github.com/zsh-users/zsh-autosuggestions /home/nodedock/.oh-my-zsh/custom/plugins/zsh-autosuggestions" && \
+    sed -i 's~plugins=(~plugins=(zsh-autosuggestions ~g' /home/nodedock/.zshrc && \
+    sed -i '1iZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20' /home/nodedock/.zshrc && \
+    sed -i '1iZSH_AUTOSUGGEST_STRATEGY=(history completion)' /home/nodedock/.zshrc && \
+    sed -i '1iZSH_AUTOSUGGEST_USE_ASYNC=1' /home/nodedock/.zshrc && \
+    sed -i '1iTERM=xterm-256color' /home/nodedock/.zshrc \
+  ;fi && \
+  if [ ${SHELL_OH_MY_ZSH_ALIASES} = true ]; then \
+    echo "" >> /home/nodedock/.zshrc && \
+    echo "# Load Custom Aliases" >> /home/nodedock/.zshrc && \
+    echo "source /home/nodedock/aliases.sh" >> /home/nodedock/.zshrc && \
+    echo "" >> /home/nodedock/.zshrc \
+  ;fi \
+;fi
+
+USER root
+
+###########################################################################
+# ZSH User Aliases
+###########################################################################
+
+USER root
+
+COPY ./aliases.sh /root/aliases.sh
+COPY ./aliases.sh /home/nodedock/aliases.sh
+
+RUN if [ ${SHELL_OH_MY_ZSH} = true ]; then \
+    sed -i 's/\r//' /root/aliases.sh && \
+    sed -i 's/\r//' /home/nodedock/aliases.sh && \
+    chown nodedock:nodedock /home/nodedock/aliases.sh && \
+    echo "" >> ~/.zshrc && \
+    echo "# Load Custom Aliases" >> ~/.zshrc && \
+    echo "source ~/aliases.sh" >> ~/.zshrc && \
+	  echo "" >> ~/.zshrc \
+;fi
+
+USER nodedock
+
+RUN if [ ${SHELL_OH_MY_ZSH} = true ]; then \
+    echo "" >> ~/.zshrc && \
+    echo "# Load Custom Aliases" >> ~/.zshrc && \
+    echo "source ~/aliases.sh" >> ~/.zshrc && \
+	  echo "" >> ~/.zshrc \
+;fi
+
+USER root
+
 #
 #--------------------------------------------------------------------------
 # Final Touch
