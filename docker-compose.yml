@@ -452,3 +452,16 @@ services:
     networks:
       - frontend
       - backend
+
+  ### Keycloak #############################################
+  keycloak:
+    build:
+      context: ./keycloak
+    environment: 
+      - KEYCLOAK_USER=${KEYCLOAK_USER}
+      - KEYCLOAK_PASSWORD=${KEYCLOAK_PASSWORD}
+    ports:
+      - "${KEYCLOAK_PORT}:8080"
+    networks:
+      - frontend
+      - backend
