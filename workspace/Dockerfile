@@ -37,7 +37,13 @@ RUN apt-get update && \
         vim \
         nano \
         postgresql-client \
-    && apt-get clean
+        dnsutils \
+        iputils-ping \
+        sudo \
+  && apt-get clean
+
+# set bash as sh
+RUN ln -s bash /bin/sh.bash && mv /bin/sh.bash /bin/sh
 
 # Source the bash
 RUN . ~/.bashrc
@@ -56,7 +62,11 @@ ENV PGID ${PGID}
 RUN apt-get update -yqq && \
     groupadd -g ${PGID} nodedock && \
     useradd -u ${PUID} -g nodedock -m nodedock -G docker_env && \
-    usermod -p "*" nodedock
+    usermod -p "$(openssl passwd -1 nodedock)" nodedock && \
+    usermod -aG sudo nodedock \
+  && apt-get clean
+
+RUN echo 'nodedock  ALL=(ALL:ALL) NOPASSWD: ALL' >>  /etc/sudoers
 
 ###########################################################################
 # Set Timezone
@@ -330,7 +340,7 @@ USER nodedock
 RUN if [ ${SHELL_OH_MY_ZSH} = true ]; then \
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh) --keep-zshrc" && \
     sed -i -r 's/^plugins=\(.*?\)$/plugins=(nvm)/' /home/nodedock/.zshrc && \
-    echo '\n\
+    echo $'\n\
 bindkey "^[OB" down-line-or-search\n\
 bindkey "^[OC" forward-char\n\
 bindkey "^[OD" backward-char\n\
@@ -355,7 +365,8 @@ bindkey "^?" backward-delete-char\n' >> /home/nodedock/.zshrc && \
     echo "# Load Custom Aliases" >> /home/nodedock/.zshrc && \
     echo "source /home/nodedock/aliases.sh" >> /home/nodedock/.zshrc && \
     echo "" >> /home/nodedock/.zshrc \
-  ;fi \
+  ;fi && \
+  chsh -s $(which zsh) <<< nodedock \
 ;fi
 
 USER root
@@ -404,4 +415,4 @@ RUN apt-get clean && \
     rm /var/log/lastlog /var/log/faillog
 
 # Set default work directory
-WORKDIR /var/www
+WORKDIR /home/nodedock
